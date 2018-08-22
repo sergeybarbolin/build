@@ -1,0 +1,1 @@
+{"version":3,"sources":["header/header.js","slider/slider..js"],"names":["console","log"],"mappings":";;AAAA;AACAA,QAAAC,GAAA,CAAA,QAAA;ACDA;AACAD,QAAAC,GAAA,CAAA,QAAA","file":"script.js","sourcesContent":["// header.js\r\nconsole.log('header');","// slider.js\r\nconsole.log('header');"]}
