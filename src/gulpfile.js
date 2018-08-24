@@ -1,21 +1,28 @@
 var
-    gulp 					= require('gulp'),
-    styl 					= require('gulp-stylus');
-    browserSync 	= require('browser-sync'),
+    gulp 				= require('gulp'),
+    pug                 = require('gulp-pug');
+    styl 				= require('gulp-stylus'),
+    browserSync 	    = require('browser-sync'),
     concat 				= require('gulp-concat'),
-    svgSprite 		= require("gulp-svg-sprites"),
+    svgSprite 		    = require("gulp-svg-sprites"),
     plumber 			= require('gulp-plumber'),
     rename 				= require('gulp-rename'),
     uglify 				= require('gulp-uglify'),
     cssmin 				= require('gulp-cssmin'),
     replace 			= require('gulp-replace'),
-    autoprefixer 	= require('gulp-autoprefixer'),
+    autoprefixer 	    = require('gulp-autoprefixer'),
     notify 				= require("gulp-notify"),
     babel 				= require('gulp-babel'),
-    sourcemaps 		= require('gulp-sourcemaps'),
     tinypng 			= require('gulp-tinypng-compress'),
     cheerio 			= require('gulp-cheerio');
-    jsLibs 				= require('./jsLibs.json');
+
+
+gulp.task('pug', function buildHTML() {
+  return gulp.src('index.pug')
+  .pipe(pug({pretty: true}))
+  .pipe(gulp.dest('../dist/'))  
+  .pipe(browserSync.reload({ stream: true }))
+});
 
 gulp.task('browser-sync', function () {
     browserSync({
@@ -41,18 +48,9 @@ gulp.task('styl-lib', function () {
         .pipe(rename({ suffix: '.min' }))
         .pipe(gulp.dest('../dist/css/'))	
         .pipe(browserSync.reload({ stream: true }))
-        .pipe(notify('Добавлены css библеотеки'))
+        // .pipe(notify('Добавлены css библеотеки'))
 });
 
-gulp.task('js-libs', function () {
-    gulp.src(jsLibs)
-        .pipe(sourcemaps.init())
-        .pipe(concat('libs.min.js'))
-        .pipe(sourcemaps.write('.'))
-        .pipe(gulp.dest('../dist/js'))
-        .pipe(browserSync.reload({ stream: true }))
-        .pipe(notify('Добавлены js библеотеки'))
-});
 
 gulp.task('styl', function () {
     return gulp.src('stylus/style.styl')
@@ -67,19 +65,24 @@ gulp.task('styl', function () {
 
 
 gulp.task('js', function () {
-    gulp.src('blocks/**/*.js')
-        .pipe(sourcemaps.init())
-        .pipe(concat('script.js'))
+
+    gulp.src([
+        
+        // 'bower_components/jquery/dist/jquery.min.js',
+        'blocks/**/*.js'
+        
+        ])
+        .pipe(concat('script.min.js'))
         .pipe(babel({
             presets: ['env']
         }))
-        .pipe(sourcemaps.write('.'))
+        .pipe(uglify())
         .pipe(gulp.dest('../dist/js'))
         .pipe(browserSync.reload({ stream: true }))
 });
 
 gulp.task('tinypng', function () {
-    gulp.src('./blocks/**/*.{png,jpg,jpeg}')
+    return gulp.src('blocks/**/*.{png,jpg,jpeg}')
 				.pipe(tinypng({
 				    key: 'MqUNEWa0vy_9z5Wj_EQydwHBCRK4_8x8',
 				    sigFile: '../dist/img/.tinypng-sigs',
@@ -90,39 +93,52 @@ gulp.task('tinypng', function () {
 		.pipe(notify('Сжато <%= file.relative %>!'))
 });
 
+gulp.task('fonts', function () {
+    return gulp.src('fonts/**/*')
+        .pipe(gulp.dest('../dist/fonts'))
+});
+
 gulp.task('sprites', function () {
-		return gulp.src('./blocks/**/*.svg')
-		.pipe(cheerio({
-		    run: function ($) {
-		       $('[fill]').removeAttr('fill');
-		       $('[style]').removeAttr('style');
-		   }
-		 }))
-		.pipe(svgSprite({
-		    mode: "symbols",
-		    preview: false,
-		    selector: "%f",
-		    svg: {
-		       symbols: 'sprite.svg' 
-		    }
-		  }
-		))
-			.pipe(replace('NaN ', '-'))
-		.pipe(gulp.dest("../dist/imag"));
+    return gulp.src('blocks/**/*.svg')
+
+
+        // remove all fill, style and stroke declarations in out shapes
+        .pipe(cheerio({
+            run: function ($) {
+                $('[fill]').removeAttr('fill');
+                $('[stroke]').removeAttr('stroke');
+                $('[style]').removeAttr('style');
+            },
+            parserOptions: {xmlMode: true}
+        }))
+        // cheerio plugin create unnecessary string '&gt;', so replace it.
+        .pipe(replace('&gt;', '>'))
+        // build svg sprite
+        .pipe(svgSprite({
+            mode: "symbols",
+            preview: false,
+            selector: "%f",
+            svg: {
+               symbols: 'sprite.svg' 
+            }
+        }))
+        .pipe(gulp.dest('../dist/img'));
 });
 
 gulp.task('watch', 
 	[
-		'styl', 
-		'js',
 		'browser-sync',
+        'tinypng',
+        'styl',
+        'fonts',
+        'pug'
 	], 
 	function () {
     gulp.watch('stylus/libs.styl', ['styl-lib']);
-    gulp.watch('jsLibs.json', ['js-libs']);
-    gulp.watch('blocks/**/*.styl', ['styl']);
-    gulp.watch('stylus/**/*.styl', ['styl']);
-		gulp.watch('./blocks/**/*.svg', ['sprites']);
-    gulp.watch('./blocks/**/*.{png,jpg,jpeg}', ['tinypng']);
+    gulp.watch(['blocks/**/*.styl','stylus/**/*.styl'], ['styl']);
+    gulp.watch(['./*.pug'], ['pug']);
+    gulp.watch(['blocks/**/*.js'], ['js']);
+	gulp.watch(['blocks/**/*.svg'], ['sprites']);
+    gulp.watch(['blocks/**/*.{png,jpg,jpeg}'], ['tinypng']);
 });
 

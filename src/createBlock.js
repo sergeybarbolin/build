@@ -40,7 +40,7 @@ if(blockName) {
 
         // Если это styl
         if(extention == 'styl') {
-          styleFileImport = '// @import \'./blocks/' + blockName + '/' + blockName + '.styl\';';
+          styleFileImport = '// @import \'../blocks/' + blockName + '/' + blockName + '.styl\';';
           fileContent = styleFileImport + '\n\n\n.' + blockName + ' {\n  \n}\n';
           fileCreateMsg = 'Для импорта стилей: ' + styleFileImport;
         }
@@ -54,7 +54,7 @@ if(blockName) {
 
         // Если это JS
         else if(extention == 'js') {
-          fileContent = '// (function(){\n// код\n// }());\n';
+          fileContent = '// ./blocks/' + blockName + '/' + blockName + '.js\n (function(){\n \n }());\n';
         }
 
         // Создаем файл, если он еще не существует
